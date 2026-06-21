@@ -9,6 +9,16 @@ import requests
 import yaml
 from playwright.async_api import async_playwright
 
+RAKUTEN_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Accept-Language": "ja-JP,ja;q=0.9",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+}
+
 DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "")
 PRICES_FILE = Path("prices.json")
 
@@ -53,19 +63,18 @@ async def get_price_amazon(page, url: str):
     return None
 
 
-async def get_price_rakuten(page, url: str):
-    await page.goto(url, wait_until="domcontentloaded", timeout=30000)
-    await page.wait_for_timeout(1000)
-
-    for selector in RAKUTEN_PRICE_SELECTORS:
-        try:
-            elements = await page.query_selector_all(selector)
-            for el in elements:
-                price = extract_price_int(await el.inner_text())
-                if price:
-                    return price
-        except Exception:
-            continue
+def get_price_rakuten_http(url: str):
+    """requestsでHTMLのitemprop="price"から価格を取得する。"""
+    try:
+        resp = requests.get(url, headers=RAKUTEN_HEADERS, timeout=15)
+        resp.raise_for_status()
+        match = re.search(r'itemprop=["\']price["\'][^>]*content=["\'](\d+)["\']', resp.text)
+        if not match:
+            match = re.search(r'content=["\'](\d+)["\'][^>]*itemprop=["\']price["\']', resp.text)
+        if match:
+            return extract_price_int(match.group(1))
+    except Exception as e:
+        print(f"  Rakuten HTTP error: {e}")
     return None
 
 
@@ -73,7 +82,7 @@ async def get_price(page, site: str, url: str):
     if site == "Amazon":
         return await get_price_amazon(page, url)
     elif site == "楽天ブックス":
-        return await get_price_rakuten(page, url)
+        return get_price_rakuten_http(url)
     return None
 
 
