@@ -1,10 +1,10 @@
 # ec-price-tracker
 
-Amazon・楽天ブックスの価格を毎日監視し、変動をDiscordに通知するツールです。
+楽天ブックスの価格を毎日監視し、変動をDiscordに通知するツールです。
 
 ## 機能
 
-- 複数ECサイト（Amazon/楽天ブックス）の価格を同時取得
+- 楽天ブックスの価格を自動取得
 - 前日との価格差・変動率をDiscordに通知
 - 値下がりは緑、値上がりは赤でカラー表示
 - GitHub Actionsで毎日自動実行
@@ -33,8 +33,6 @@ playwright install chromium
 products:
   - name: 商品名
     urls:
-      - site: Amazon
-        url: https://www.amazon.co.jp/dp/XXXXXXXXXX
       - site: 楽天ブックス
         url: https://books.rakuten.co.jp/rb/XXXXXXX/
 ```
@@ -58,3 +56,7 @@ python tracker.py
 
 `.github/workflows/tracker.yml` により毎日0時（UTC）に自動実行されます。
 前回実行時の価格は `actions/cache` で管理されます。
+
+## 備考
+
+Amazonはクラウド環境（GitHub Actions）からのアクセスをBot検知でブロックするため対象外としています。Amazon価格監視が必要な場合はAmazon Product Advertising APIの利用を推奨します。
